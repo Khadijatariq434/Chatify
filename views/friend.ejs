@@ -1,0 +1,78 @@
+<%- include('partials/dashboard') %>
+
+<!-- Main Content -->
+<!-- Main Content -->
+<main class="container mx-auto px-4 py-8">
+  <h2 class="text-center text-3xl font-bold p-4">
+    Friends List for <%= userName %>
+  </h2>
+  <% if (friends.length > 0) { %>
+  <ul class="space-y-4">
+    <% friends.forEach(friend => { %>
+    <li
+      class="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm"
+    >
+      <div class="flex items-center">
+        <!-- Friend's Profile Picture -->
+        <div class="w-12 h-12 flex-shrink-0">
+          <% if (friend.profilePicture) { %>
+          <img
+            src="<%= friend.profilePicture %>"
+            alt="<%= friend.name %>'s Profile Picture"
+            class="w-full h-full rounded-full object-cover"
+          />
+          <% } else { %>
+          <div
+            class="w-full h-full bg-gray-300 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl"
+          >
+            <% if (friend.name && friend.name.trim() !== '') { %> 
+              <%= friend.name.charAt(0).toUpperCase() %>
+            <% } else { %> 
+              <%= "?" %> <!-- Fallback in case name is undefined or empty -->
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+
+        <!-- Friend's Name and Email -->
+        <div class="ml-4">
+          <p class="text-lg font-medium text-gray-800"><%= friend.name || "Unknown" %></p>
+          <p class="text-sm text-gray-500"><%= friend.email %></p>
+        </div>
+      </div>
+      <!-- Message Icon (Right-Aligned) -->
+      <div class="flex items-center space-x-2 relative">
+        <a
+          href="/chat/messages/<%= friend._id %>?token=<%= token %>"
+          class="text-blue-600 hover:text-blue-800"
+        >
+          <i class="fas fa-comment-alt text-2xl"></i>
+        </a>
+        <% if (friend.hasNewMessages) { %>
+        <div
+          class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center transform translate-x-2 -translate-y-2"
+        >
+          !
+        </div>
+        <% } %>
+      </div>
+    </li>
+    <% }); %>
+  </ul>
+  <% } else { %>
+  <div class="text-center text-gray-500">
+    <p>You currently have no friends added.</p>
+  </div>
+  <% } %>
+</main>
+
+
+<footer class="bg-gray-800 text-white py-4 mt-auto">
+  <div class="container mx-auto text-center">
+    <a
+      href="/dashboard?token=<%= token %>"
+      class="text-blue-400 hover:underline"
+      >Back to Dashboard</a
+    >
+  </div>
+</footer>

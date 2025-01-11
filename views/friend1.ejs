@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends List</title>
+    <link rel="stylesheet" href="/output.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-blue-600 text-white py-4 shadow-lg">
+        <div class="container mx-auto px-4">
+            <h1 class="text-2xl font-semibold text-center">Friends List for <%= userName %></h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <% if (friends.length > 0) { %>
+            <ul class="space-y-4">
+                <% friends.forEach(friend => { %>
+                    <li class="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
+                        <div class="flex items-center">
+                            <!-- Profile Picture -->
+                            <div class="w-12 h-12 flex-shrink-0">
+                                <% if (friend.profilePicture) { %>
+                                    <img src="<%= friend.profilePicture %>" alt="<%= friend.name %>'s Profile Picture" class="w-full h-full rounded-full object-cover">
+                                <% } else { %>
+                                    <div class="w-full h-full bg-gray-300 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl">
+                                        <%= friend.name.charAt(0).toUpperCase() %>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <!-- Friend's Name and Email -->
+                            <div class="ml-4">
+                                <p class="text-lg font-medium text-gray-800"><%= friend.name %></p>
+                                <p class="text-sm text-gray-500"><%= friend.email %></p>
+                            </div>
+                        </div>
+                        <!-- Message Icon (Right-Aligned) -->
+                        <div class="flex items-center space-x-2">
+                            <a href="/chat/messages/<%= friend._id %>?token=<%= token %>" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-comment-alt text-2xl"></i> <!-- FontAwesome message icon -->
+                            </a>
+                        </div>
+                    </li>
+                <% }); %>
+            </ul>
+        <% } else { %>
+            <div class="text-center text-gray-500">
+                <p>You currently have no friends added.</p>
+            </div>
+        <% } %>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-4 mt-auto">
+        <div class="container mx-auto text-center">
+            <a href="/dashboard?token=<%= token %>" class="text-blue-400 hover:underline">Back to Dashboard</a>
+        </div>
+    </footer>
+</body>
+</html>

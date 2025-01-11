@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <link rel="stylesheet" href="/output.css">
+</head>
+<body class="bg-gray-100">
+
+    <%- include('partials/dashboard') %>
+
+    <!-- Chat Container -->
+    <div class="max-w-4xl mx-auto mt-10 p-4 bg-white rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4 border-b pb-4 mb-4">
+            <!-- Friend's Profile Picture -->
+            <img src="<%= friendProfilePicture %>" alt="<%= friendName %>" class="w-12 h-12 rounded-full">
+    
+            <!-- Friend's Name -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800"><%= friendName %></h2>
+                <p class="text-sm text-gray-500">Online</p> <!-- Optional status -->
+            </div>
+        </div>
+      
+        <div class="flex flex-col h-96">
+            <!-- Chat Messages -->
+            <div id="chatMessages" class="flex-1 overflow-auto p-2 space-y-4">
+                <% messages.forEach((msg) => { %>
+                <div class="flex <%= msg.sender === currentUserId ? 'justify-end' : 'justify-start' %>">
+                    <div class="<%= msg.sender === currentUserId ? 'bg-blue-500' : 'bg-green-500' %> p-2 rounded-lg max-w-xs text-white">
+                        <%= msg.message %>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+            
+
+            <!-- Input and Send Message -->
+            <div class="mt-4 flex items-center space-x-4">
+                <input id="messageInput" type="text" class="flex-1 px-4 py-2 border rounded-lg" placeholder="Type your message..." />
+                <button id="sendButton" class="px-4 py-2 bg-blue-500 text-white rounded-lg">Send</button>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script> <!-- Import Socket.IO client -->
+    <script>
+        const receiverId = "<%= friendId %>"; // Pass receiverId from backend
+        const userId = "<%= currentUserId %>"; // Current logged in user's ID
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const socket = io(); // Connect to the Socket.IO server
+    
+        // Emit a message when the user clicks 'Send'
+        sendButton.addEventListener('click', async () => {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+            try {
+            const response = await fetch(`/chat/send?token=${token}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                   // Send the token in the Authorization header
+                },
+                body: JSON.stringify({
+                    senderId: userId,
+                    receiverId: receiverId,
+                    message: message
+                })
+            });
+
+    if(response.ok){
+        socket.emit('chat message', {
+                receiverId: receiverId,
+                message: message,
+                sender: userId,
+            });
+    
+            // Emit the message to the server via Socket.IO
+            
+    
+            // Append the sent message to the chat immediately
+            appendMessage(message, true);
+            messageInput.value = ''; // Clear the input field
+        }
+        else {
+                const data = await response.json();
+                console.error('Failed to send message:', data.message);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    });
+    
+        // Listen for incoming messages
+        socket.on('chat message', (data) => {
+            // Append the incoming message to the chat
+            appendMessage(data.message, data.sender === userId);
+        });
+    
+        // Append a message to the chat window
+        function appendMessage(message, isSentByCurrentUser) {
+            if (!message) return;
+    
+            // Check if the message already exists in the chat (to avoid duplication)
+            const existingMessages = chatMessages.querySelectorAll('.message');
+            for (const msg of existingMessages) {
+                if (msg.textContent === message) return; // If message already exists, don't append it again
+            }
+    
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', isSentByCurrentUser ? 'justify-end' : 'justify-start');
+    
+            const messageElement = document.createElement('div');
+            messageElement.classList.add(
+                'p-2', 'rounded-lg', 'max-w-xs',
+                isSentByCurrentUser ? 'bg-blue-500' : 'bg-green-500', 'text-white', 'message'
+            );
+            messageElement.textContent = message;
+    
+            messageWrapper.appendChild(messageElement);
+            chatMessages.appendChild(messageWrapper);
+    
+            // Scroll to the bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    
+        // Fetch initial messages on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages(); // Load existing messages from the backend
+        });
+    
+        // Fetch chat messages from the server (if necessary)
+        async function fetchMessages() {
+            try {
+                const response = await fetch(`/chat/messages/${receiverId}/json?token=${token}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    const messages = data.messages;
+    
+                    chatMessages.innerHTML = ''; // Clear the existing messages
+    
+                    messages.forEach((msg) => {
+                        appendMessage(msg.message, String(msg.sender) === String(userId));
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    console.error('Failed to fetch messages, HTTP status:', response.status);
+                }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            }
+        }
+    </script>
+    
+    <!-- <script>
+        const receiverId = "<%= friendId %>"; // Pass receiverId from backend
+       const userId= "<%= currentUserId %>"
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        // Handle sending message
+        sendButton.addEventListener('click', async () => {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+        
+            try {
+                const response = await fetch(`/chat/send?token=${token}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        
+                    },
+                    body: JSON.stringify({ receiverId, message }),
+                });
+        
+                if (response.ok) {
+                    appendMessage(message, false); // Append sent message immediately
+                    messageInput.value = ''; // Clear input field
+                } else {
+                    const responseData = await response.json();
+                    console.error('Failed to send message:', responseData.message);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        });
+        
+        // Append a message to the chat
+        function appendMessage(message, isSentByCurrentUser) {
+    if (!message) return;
+
+    // Create a wrapper for alignment
+    const messageWrapper = document.createElement('div');
+    messageWrapper.classList.add('flex', isSentByCurrentUser ? 'justify-end' : 'justify-start');
+
+    // Create the message bubble
+    const messageElement = document.createElement('div');
+    messageElement.classList.add(
+        'p-2', 'rounded-lg', 'max-w-xs',
+        isSentByCurrentUser ? 'bg-blue-500' : 'bg-green-500', 'text-white'
+    );
+    messageElement.textContent = message;
+
+    // Append the message bubble to the wrapper
+    messageWrapper.appendChild(messageElement);
+
+    // Append the wrapper to the chat container
+    chatMessages.appendChild(messageWrapper);
+
+    // Scroll to the latest message
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+        // Fetch messages from the server
+//         async function fetchMessages() {
+//     try {
+//         const response = await fetch(`/chat/messages/${receiverId}?token=${token}`, {
+//             method: 'GET',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//         });
+
+//         const text = await response.text();  // Get the response text
+
+//         if (response.ok) {
+//             const contentType = response.headers.get('Content-Type');
+
+//             if (contentType && contentType.includes('application/json')) {
+//                 try {
+//                     const data = JSON.parse(text);
+//                     const messages = data.messages;
+//                     console.log('messages', messages);
+
+//                     chatMessages.innerHTML = '';  // Clear existing messages
+
+//                     messages.forEach((msg) => {
+//                         console.log("message", msg);
+//                         appendMessage(msg.message, String(msg.sender) === String(userId));
+//                     });
+//                 } catch (error) {
+//                     console.error('Error parsing JSON:', error);
+//                 }
+//             } else {
+//                 console.error('Expected JSON but got', contentType);
+//                 console.error('Response Text:', text);  // Log the HTML response to debug
+//             }
+//         } else {
+//             console.error('Failed to fetch messages, HTTP status:', response.status);
+//             console.error('Response Text:', text);  // Log the HTML response to debug
+//         }
+//     } catch (error) {
+//         console.error('Error fetching messages:', error);
+//     }
+// }
+
+        // Refresh chat messages periodically
+        async function fetchMessages() {
+    try {
+        const response = await fetch(`/chat/messages/${receiverId}/json?token=${token}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const messages = data.messages;
+
+            chatMessages.innerHTML = '';  // Clear existing messages
+
+            messages.forEach((msg) => {
+                appendMessage(msg.message, String(msg.sender) === String(userId));
+            });
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            console.error('Failed to fetch messages, HTTP status:', response.status);
+        }
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+    }
+}
+
+      
+        // function startMessagePolling(interval = 10000) {
+        //     setInterval(() => {
+        //         fetchMessages(); // Fetch messages every 5 seconds
+        //     }, interval);
+        // }
+        
+        // Load messages and start polling on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMessages(); // Load messages initially
+            // startMessagePolling(); // Start polling for new messages
+        });
+    </script> -->
+    
+
+</body>
+</html>

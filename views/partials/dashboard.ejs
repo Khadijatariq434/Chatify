@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/output.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-200">
+    <!-- Sidebar for small screens -->
+    <div
+      id="sidebar"
+      class="fixed inset-0 z-10 bg-gray-900 bg-opacity-50 hidden"
+    >
+      <div class="bg-white w-64 p-4 space-y-4">
+        <button id="closeSidebar" class="text-black">X</button>
+        <div class="flex flex-col items-start space-y-2">
+          <a href="/" class="text-blue-600">Log out</a>
+          <a href="/users/update/<%= user._id %>" class="text-blue-600"
+            >Edit Profile</a
+          >
+          <a
+            href="/chat/messages/6773b882b3c2dd227140ef52?token=<%= token %>"
+            class="text-blue-600"
+            >Chat with Friend</a
+          >
+          <a
+            href="/friend/<%= user._id %>?token=<%= token %>"
+            class="text-blue-600"
+            >View Friends</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-blue-600 p-4 shadow-lg">
+      <div class="container mx-auto flex justify-between items-center">
+        <!-- Left side: Profile Picture and Name -->
+        <div class="flex items-center space-x-4">
+          <% if (user.profilePicture) { %>
+          <img
+            src="<%= user.profilePicture %>"
+            alt="Profile Picture"
+            class="w-12 h-12 rounded-full border-2 border-white"
+          />
+          <% } else { %>
+          <div
+            class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-blue-600 font-bold text-lg"
+          >
+            <%= user.name.charAt(0).toUpperCase() %>
+          </div>
+          <% } %>
+          <span class="text-white font-semibold text-xl"><%= user.name %></span>
+        </div>
+
+        <!-- Middle: Search Bar -->
+        <div
+          class="flex items-center justify-center flex-grow max-w-md px-3 relative"
+        >
+          <input
+            type="text"
+            id="searchBar"
+            placeholder="Search for friends..."
+            class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none w-full"
+          />
+          <!-- Search Results -->
+          <div
+            id="searchResults"
+            class="absolute top-full left-0 w-full bg-white shadow-md rounded-lg mt-1 z-10 hidden"
+          ></div>
+        </div>
+
+        <!-- Right side: Navbar Links (for large screens) -->
+        <div class="space-x-4 hidden md:flex">
+          <a href="/" class="text-white hover:text-blue-200">Log out</a>
+          <a
+            href="/users/update/<%= user._id %>"
+            class="text-white hover:text-blue-200"
+            >Edit Profile</a
+          >
+          <a
+            href="/chat/messages/6773b882b3c2dd227140ef52?token=<%= token %>"
+            class="text-white hover:text-blue-200"
+            >Chat with Friend</a
+          >
+          <a
+            href="/friend/<%= user._id %>?token=<%= token %>"
+            class="text-white hover:text-blue-200"
+            >View Friends</a
+          >
+        </div>
+
+        <!-- Hamburger Icon for smaller screens -->
+        <button id="hamburger" class="md:hidden text-white">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="relative">
+          <!-- Notification Icon -->
+          <button id="notificationIcon" class="p-2 text-white">
+            <i class="fas fa-bell"></i>
+            <span
+              id="pendingCount"
+              class="absolute top-0 right-0 text-xs text-white bg-red-500 rounded-full px-1"
+            ></span>
+          </button>
+
+          <!-- Pending Requests Menu -->
+          <div
+            id="pendingRequestsMenu"
+            class="absolute right-0 mt-2 w-60 bg-white shadow-lg rounded-md hidden z-10"
+          >
+            <div id="pendingRequestsContainer" class="p-2">
+              <!-- Pending requests will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <script>
+      const token="<%= token %>"
+      const searchBar = document.getElementById("searchBar");
+      const searchResultsContainer = document.getElementById("searchResults");
+      const hamburger = document.getElementById("hamburger");
+      const sidebar = document.getElementById("sidebar");
+      const closeSidebar = document.getElementById("closeSidebar");
+      const loggedInUserId = "<%= user._id %>";
+      const notificationIcon = document.getElementById("notificationIcon");
+      const pendingRequestsMenu = document.getElementById(
+        "pendingRequestsMenu"
+      );
+      const pendingRequestsContainer = document.getElementById(
+        "pendingRequestsContainer"
+      );
+      const pendingCount = document.getElementById("pendingCount");
+      // Handle search input
+      searchBar.addEventListener("input", async (event) => {
+        const query = event.target.value;
+        if (query.length > 0) {
+          try {
+            // Fetch users matching the query
+            const response = await fetch(
+              `/searchUsers?query=${encodeURIComponent(query)}`
+            );
+            const users = await response.json();
+
+            // Clear previous results
+            searchResultsContainer.innerHTML = "";
+
+            if (users.length > 0) {
+              searchResultsContainer.classList.remove("hidden"); // Show results
+
+              users.forEach((user) => {
+                const userDiv = document.createElement("div");
+                userDiv.classList.add(
+                  "flex",
+                  "items-center",
+                  "space-x-4",
+                  "bg-white",
+                  "p-4",
+                  "rounded-lg",
+                  "shadow-md",
+                  "mb-2"
+                );
+
+                userDiv.innerHTML = `
+          <div class="flex items-center">
+              ${
+                user.profilePicture
+                  ? `
+                  <img src="${user.profilePicture}" alt="Profile Picture"
+                      class="w-10 h-10 rounded-full border-2 border-gray-300">
+              `
+                  : `
+                  <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-blue-600 font-bold text-lg">
+                      ${user.name.charAt(0).toUpperCase()}
+                  </div>
+              `
+              }
+              <span class="text-blue-600 font-semibold text-lg ml-2">${
+                user.name
+              }</span>
+          </div>
+         <button class="sendRequestButton bg-green-600 text-white px-2 py-2 rounded-full flex items-center hover:bg-green-500 ml-auto" data-user-id=${
+           user._id
+         }>
+    <i class="fas fa-user-plus mr-2"></i>
+</button>
+
+      `;
+                const sendRequestButton =
+                  userDiv.querySelector(".sendRequestButton");
+                sendRequestButton.addEventListener("click", () => {
+                  // Use the data attribute to get the receiver's ID
+                  const receiverId =
+                    sendRequestButton.getAttribute("data-user-id");
+
+                  if (loggedInUserId === receiverId) {
+                    alert("You cannot send a friend request to yourself.");
+                    return; // Stop the function if they're the same
+                  }
+                  // Now call the function to send the friend request
+                  sendFriendRequest(loggedInUserId, receiverId);
+                });
+
+                searchResultsContainer.appendChild(userDiv);
+              });
+            } else {
+              searchResultsContainer.innerHTML =
+                '<p class="text-gray-500 text-center">No users found.</p>';
+            }
+          } catch (error) {
+            console.error("Error fetching users:", error);
+          }
+        } else {
+          searchResultsContainer.innerHTML = "";
+          searchResultsContainer.classList.add("hidden"); // Hide results
+        }
+      });
+
+      // Send Friend Request
+      async function sendFriendRequest(senderId, receiverId) {
+        console.log("Sender ID:", senderId); // Check if senderId is correct
+        console.log("Receiver ID:", receiverId); // Ensure receiverId is defined
+
+        // Check if senderId and receiverId are the same
+        // if (senderId === receiverId) {
+        //     alert("You cannot send a friend request to yourself.");
+        //     return; // Stop the function if they're the same
+        // }
+
+        try {
+          const response = await fetch("/friend/request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ senderId, receiverId }),
+          });
+
+          console.log("Response status:", response.status);
+
+          if (response.ok) {
+            alert("Friend request sent!");
+          } else {
+            const errorText = await response.text();
+            console.log("Error response:", errorText);
+            alert("Failed to send friend request.");
+          }
+        } catch (error) {
+          console.error("Error sending friend request:", error);
+        }
+      }
+
+      // Sidebar toggle
+      hamburger.addEventListener("click", () =>
+        sidebar.classList.remove("hidden")
+      );
+      closeSidebar.addEventListener("click", () =>
+        sidebar.classList.add("hidden")
+      );
+
+ 
+// Fetch pending friend requests (you can make an API call here to get the data)
+const fetchPendingRequests = async () => {
+    try {
+        const response = await fetch(`/friend/pending/${loggedInUserId}?token=${token}`); // Modify this URL based on your API
+        const data = await response.json();
+        console.log('pendin req',data)
+        return data;// Assuming the response contains an array of pending requests
+    } catch (error) {
+        console.error('Error fetching pending requests:', error);
+    }
+};
+
+// Display pending requests in the dropdown
+const showPendingRequests = async () => {
+    const requests = await fetchPendingRequests();
+
+    if (requests && requests.length > 0) {
+        pendingCount.textContent = requests.length; // Show count on the icon
+        pendingRequestsMenu.classList.remove('hidden'); // Show the menu
+        pendingRequestsContainer.innerHTML = ''; // Clear existing content
+
+        requests.forEach(request => {
+            const requestDiv = document.createElement('div');
+            requestDiv.classList.add('flex', 'items-center', 'justify-between', 'p-2', 'border-b');
+
+            requestDiv.innerHTML = `
+                <span>${request.name}</span>
+                <button class="acceptRequestButton bg-green-600 text-white px-2 py-1 rounded-full" data-user-id="${request._id}">
+                    Accept
+                </button>
+            `;
+
+            const acceptButton = requestDiv.querySelector('.acceptRequestButton');
+            acceptButton.addEventListener('click', () => {
+                const userId = '<%= user._id %>'; // Logged-in user ID (ensure this is available in your template)
+                const friendId = request._id;
+
+                // Send the request to accept the friend request
+                acceptFriendRequest(userId, friendId);
+            });
+
+            pendingRequestsContainer.appendChild(requestDiv);
+        });
+    } else {
+        pendingRequestsContainer.innerHTML = '<div class="p-2">No pending requests</div>';
+    }
+};
+
+// Handle notification icon click
+notificationIcon.addEventListener('click', () => {
+    showPendingRequests();
+});
+
+// Accept Friend Request API call
+const acceptFriendRequest = async (userId, friendId) => {
+    try {
+        const response = await fetch('/friend/accept', {  // Adjust the URL to your API endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId, friendId }), // Send token along with userId and friendId
+        });
+        const result = await response.json();
+        if (response.status === 200) {
+            console.log(result.message); // Success message
+            showPendingRequests(); // Re-fetch pending requests
+        } else {
+            alert(result.error); // Show error message
+        }
+    } catch (error) {
+        console.error('Error accepting friend request:', error);
+    }
+};
+    </script>
+  </body>
+</html>
