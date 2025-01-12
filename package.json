@@ -4,8 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tailwind": "npx tailwindcss -i ./views/input.css -o ./public/output.css --watch",
-    "start": "nodemon app.js"
+    "tailwind": "npx tailwindcss -i ./views/input.css -o ./public/output.css",
+    "start": "node app.js",
+    "build":"npx tailwindcss -i ./views/input.css -o ./public/output.css"
   },
   "keywords": [],
   "author": "",
