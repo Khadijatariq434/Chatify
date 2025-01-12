@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "tailwind": "npx tailwindcss -i ./views/input.css -o ./public/output.css",
     "start": "node app.js",
-    "build":"npx tailwindcss -i ./views/input.css -o ./public/output.css"
+    "build":"npx tailwindcss -i ./views/input.css -o ./public/output.css",
+  "postinstall": "npm install"
+
   },
   "engines": {
   "node": ">=18.18.0 <19.0.0"
