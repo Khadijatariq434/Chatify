@@ -8,6 +8,10 @@
     "start": "node app.js",
     "build":"npx tailwindcss -i ./views/input.css -o ./public/output.css"
   },
+  "engines": {
+  "node": "18.x"
+}
+,
   "keywords": [],
   "author": "",
   "license": "ISC",
